@@ -34,7 +34,10 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define SEND_BUFFER_SIZE  20
-uint8_t send_buffer[SEND_BUFFER_SIZE] = "Test transmission!\r\n";
+static uint8_t send_buffer[SEND_BUFFER_SIZE] = "Test transmission!\r\n";
+
+#define BUFFER_SIZE	3
+static uint8_t buffer[3];
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,6 +50,7 @@ uint8_t send_buffer[SEND_BUFFER_SIZE] = "Test transmission!\r\n";
 I2C_HandleTypeDef hi2c2;
 
 UART_HandleTypeDef huart3;
+DMA_HandleTypeDef hdma_usart3_rx;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -63,6 +67,7 @@ const osThreadAttr_t defaultTask_attributes = {
 void SystemClock_Config(void);
 static void MPU_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_USART3_UART_Init(void);
 void StartDefaultTask(void *argument);
@@ -108,9 +113,15 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_I2C2_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
+
+  // arming the interrupt to let it know to receive UART data on the interrupt line
+//  HAL_UART_Receive_IT(&huart3, buffer, BUFFER_SIZE);
+  HAL_UART_Receive_DMA(&huart3, buffer, BUFFER_SIZE);
+
   SSD1306_Init (); // initialise the display
   SSD1306_GotoXY (10,10); // goto 10, 10
   SSD1306_Puts ("HELLO", &Font_11x18, 1); // print Hello
@@ -313,6 +324,22 @@ static void MX_USART3_UART_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -352,7 +379,15 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(huart);
 
+  HAL_UART_Transmit(&huart3, buffer, BUFFER_SIZE, 10);
+//  HAL_UART_Receive_IT(&huart3, buffer, BUFFER_SIZE);
+  HAL_UART_Receive_DMA(&huart3, buffer, BUFFER_SIZE);
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -369,7 +404,7 @@ void StartDefaultTask(void *argument)
   for(;;)
   {
 	  HAL_GPIO_TogglePin(USER_LED_YELLOW_GPIO_Port, USER_LED_YELLOW_Pin);
-	  HAL_UART_Transmit(&huart3, send_buffer, SEND_BUFFER_SIZE, 10);
+//	  HAL_UART_Transmit(&huart3, send_buffer, SEND_BUFFER_SIZE, 10);
 	  HAL_Delay(1000);
   }
   /* USER CODE END 5 */
