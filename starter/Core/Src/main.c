@@ -23,6 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "app_main.h"
 #include "ssd1306.h"
 /* USER CODE END Includes */
 
@@ -33,11 +34,20 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define SEND_BUFFER_SIZE  20
-static uint8_t send_buffer[SEND_BUFFER_SIZE] = "Test transmission!\r\n";
 
-#define BUFFER_SIZE	3
-static uint8_t buffer[3];
+//#define SEND_BUFFER_SIZE  20
+//static uint8_t send_buffer[SEND_BUFFER_SIZE] = "Test transmission!\r\n";
+
+#define COMMAND_STRING_SIZE	128
+struct Command {
+	char string[COMMAND_STRING_SIZE];
+	int len;
+};
+
+// Where the UART3 DMA will read into
+static uint8_t rx_byte = 0;
+
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -60,7 +70,13 @@ const osThreadAttr_t defaultTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
-
+/* Definitions for cliTask */
+osThreadId_t cliTaskHandle;
+const osThreadAttr_t cliTask_attributes = {
+  .name = "cliTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -120,7 +136,8 @@ int main(void)
 
   // arming the interrupt to let it know to receive UART data on the interrupt line
 //  HAL_UART_Receive_IT(&huart3, buffer, BUFFER_SIZE);
-  HAL_UART_Receive_DMA(&huart3, buffer, BUFFER_SIZE);
+//  HAL_UART_Receive_DMA(&huart3, buffer, BUFFER_SIZE);
+  HAL_UART_Receive_DMA(&huart3, &rx_byte, 1);
 
   SSD1306_Init (); // initialise the display
   SSD1306_GotoXY (10,10); // goto 10, 10
@@ -155,6 +172,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  cliTaskHandle = osThreadNew(cliTask, NULL, &cliTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -379,15 +397,39 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-  /* Prevent unused argument(s) compilation warning */
-  UNUSED(huart);
+	if (huart == &huart3) {
+		static char rx_buf[COMMAND_STRING_SIZE] = { '\0' };
+		static int rx_buf_index = 0;
 
-  HAL_UART_Transmit(&huart3, buffer, BUFFER_SIZE, 10);
-//  HAL_UART_Receive_IT(&huart3, buffer, BUFFER_SIZE);
-  HAL_UART_Receive_DMA(&huart3, buffer, BUFFER_SIZE);
+		char c = (char)rx_byte;
+
+		// User hit 'enter'. Fwd the command to the command task for processing
+		if (c == '\r' || c == '\n') {
+			// Avoid sending empty lines
+			if (rx_buf_index > 0) {
+				// Construct a message object to fwd to task
+				struct Command command;
+				memcpy(command.string, rx_buf, rx_buf_index);
+				command.string[rx_buf_index] = '\0';
+
+				command.len = strlen(command.string);
+
+				// Reset the 'rx' values
+				memset(rx_buf, '\0', COMMAND_STRING_SIZE);
+				rx_buf_index = 0;
+			}
+		} else {
+			// non-enter character. Append to the message
+			rx_buf[rx_buf_index++] = c;
+		}
+
+		HAL_UART_Receive_DMA(&huart3, &rx_byte, 1);
+	}
 }
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -404,7 +446,6 @@ void StartDefaultTask(void *argument)
   for(;;)
   {
 	  HAL_GPIO_TogglePin(USER_LED_YELLOW_GPIO_Port, USER_LED_YELLOW_Pin);
-//	  HAL_UART_Transmit(&huart3, send_buffer, SEND_BUFFER_SIZE, 10);
 	  HAL_Delay(1000);
   }
   /* USER CODE END 5 */
