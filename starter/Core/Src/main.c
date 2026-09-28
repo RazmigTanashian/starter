@@ -23,7 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "app_main.h"
+#include "application.h"
 #include "ssd1306.h"
 /* USER CODE END Includes */
 
@@ -74,6 +74,14 @@ const osThreadAttr_t defaultTask_attributes = {
 osThreadId_t cliTaskHandle;
 const osThreadAttr_t cliTask_attributes = {
   .name = "cliTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+
+/* Definitions for mainTask */
+osThreadId_t mainTaskHandle;
+const osThreadAttr_t mainTask_attributes = {
+  .name = "mainTask",
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
@@ -172,6 +180,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  mainTaskHandle = osThreadNew(mainTask, NULL, &mainTask_attributes);
   cliTaskHandle = osThreadNew(cliTask, NULL, &cliTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
@@ -372,8 +381,12 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(USER_LED_RED_GPIO_Port, USER_LED_RED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(USER_LED_YELLOW_GPIO_Port, USER_LED_YELLOW_Pin, GPIO_PIN_RESET);
@@ -383,6 +396,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(USER_BUTTON_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : USER_LED_RED_Pin */
+  GPIO_InitStruct.Pin = USER_LED_RED_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(USER_LED_RED_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : USER_LED_YELLOW_Pin */
   GPIO_InitStruct.Pin = USER_LED_YELLOW_Pin;
@@ -445,8 +465,8 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	  HAL_GPIO_TogglePin(USER_LED_YELLOW_GPIO_Port, USER_LED_YELLOW_Pin);
-	  HAL_Delay(1000);
+	  // block long time to free up resources
+	  HAL_Delay(portMAX_DELAY);
   }
   /* USER CODE END 5 */
 }

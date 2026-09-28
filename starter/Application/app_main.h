@@ -1,8 +1,8 @@
 #ifndef APP_MAIN_H
 #define APP_MAIN_H
 
-#include "FreeRTOS.h"
+#include "application.h"
 
-void cliTask(void *argument);
+void mainTask(void *argument);
 
 #endif // APP_MAIN_H
