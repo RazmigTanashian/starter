@@ -34,10 +34,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
-//#define SEND_BUFFER_SIZE  20
-//static uint8_t send_buffer[SEND_BUFFER_SIZE] = "Test transmission!\r\n";
-
 #define COMMAND_STRING_SIZE	128
 struct Command {
 	char string[COMMAND_STRING_SIZE];
@@ -46,7 +42,6 @@ struct Command {
 
 // Where the UART3 DMA will read into
 static uint8_t rx_byte = 0;
-
 
 /* USER CODE END PD */
 
@@ -421,32 +416,14 @@ static void MX_GPIO_Init(void)
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if (huart == &huart3) {
-		static char rx_buf[COMMAND_STRING_SIZE] = { '\0' };
-		static int rx_buf_index = 0;
+		BaseType_t xHigherPriorityTaskWoken;
+		xHigherPriorityTaskWoken = pdFALSE;
 
-		char c = (char)rx_byte;
-
-		// User hit 'enter'. Fwd the command to the command task for processing
-		if (c == '\r' || c == '\n') {
-			// Avoid sending empty lines
-			if (rx_buf_index > 0) {
-				// Construct a message object to fwd to task
-				struct Command command;
-				memcpy(command.string, rx_buf, rx_buf_index);
-				command.string[rx_buf_index] = '\0';
-
-				command.len = strlen(command.string);
-
-				// Reset the 'rx' values
-				memset(rx_buf, '\0', COMMAND_STRING_SIZE);
-				rx_buf_index = 0;
-			}
-		} else {
-			// non-enter character. Append to the message
-			rx_buf[rx_buf_index++] = c;
-		}
+		xQueueSendFromISR(xCharRecvQueue, &rx_byte, &xHigherPriorityTaskWoken);
 
 		HAL_UART_Receive_DMA(&huart3, &rx_byte, 1);
+
+		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 	}
 }
 
