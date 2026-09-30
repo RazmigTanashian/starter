@@ -3,6 +3,19 @@
 #define LINE_SIZE	128
 #define KEY_BACKSPACE	'\177'
 
+int help_handler(const char *args) {
+	return 0;
+}
+
+struct cli_command {
+	const char *command;
+	int (* handler)(const char *);
+};
+
+struct cli_command commands[] = {
+		{ "help", help_handler }
+};
+
 QueueHandle_t xCharRecvQueue;
 
 char get_char(void) {
