@@ -1,6 +1,6 @@
 #include "cli.h"
 
-#define LINE_BUF_SIZE	128
+#define LINE_SIZE	128
 #define KEY_BACKSPACE	'\177'
 
 QueueHandle_t xCharRecvQueue;
@@ -18,7 +18,7 @@ void execute_command(void) {
 void get_line(char *buf, int buf_max_len) {
 	int buf_index = 0;
 
-	// Accumulate line until user hits 'Enter' key
+	// Accumulate line until user hits 'Enter' key or user's input exceeds 128 characters
 	while (buf_index < buf_max_len - 1) {
 		char c = get_char();
 
@@ -41,17 +41,17 @@ void get_line(char *buf, int buf_max_len) {
 
 void cliTask(void *argument) {
 
-	static char line_buf[LINE_BUF_SIZE] = { 0 };
+	static char line[LINE_SIZE] = { 0 };
 	xCharRecvQueue = xQueueCreate(1, sizeof(char));
 	if (xCharRecvQueue == NULL) {
 		// TODO: error handling
 	}
 
 	for (;;) {
-		get_line(line_buf, LINE_BUF_SIZE);
+		get_line(line, LINE_SIZE);
 		execute_command();
 
 		// Reset line_buf
-		memset(line_buf, 0, LINE_BUF_SIZE);
+		memset(line, 0, LINE_SIZE);
 	}
 }
