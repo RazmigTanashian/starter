@@ -7,14 +7,20 @@ int help_handler(const char *args) {
 	return 0;
 }
 
+int uuuu_handler(const char *args) {
+	return 0;
+}
+
 struct cli_command {
 	const char *command;
 	int (* handler)(const char *);
 };
 
 struct cli_command commands[] = {
-		{ "help", help_handler }
+		{ "help", help_handler },
+		{ "uuuu", uuuu_handler }
 };
+#define COMMANDS_ARRAY_LENGTH	2
 
 QueueHandle_t xCharRecvQueue;
 
@@ -24,8 +30,14 @@ char get_char(void) {
 	return (char)c;
 }
 
-void execute_command(void) {
+void execute_command(const char *line, int line_size) {
+	char *cmd = "";
 
+	for (int i = 0; i < COMMANDS_ARRAY_LENGTH; i++) {
+		if (strcmp(cmd, commands[i].command) == 0) {
+			commands[i].handler(line);
+		}
+	}
 }
 
 void get_line(char *buf, int buf_max_len) {
@@ -53,7 +65,6 @@ void get_line(char *buf, int buf_max_len) {
 }
 
 void cliTask(void *argument) {
-
 	static char line[LINE_SIZE] = { 0 };
 	xCharRecvQueue = xQueueCreate(1, sizeof(char));
 	if (xCharRecvQueue == NULL) {
@@ -62,7 +73,7 @@ void cliTask(void *argument) {
 
 	for (;;) {
 		get_line(line, LINE_SIZE);
-		execute_command();
+		execute_command(line, LINE_SIZE);
 
 		// Reset line_buf
 		memset(line, 0, LINE_SIZE);
