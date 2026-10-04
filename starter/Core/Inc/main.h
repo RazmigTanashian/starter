@@ -61,6 +61,8 @@ void Error_Handler(void);
 #define USER_BUTTON_GPIO_Port GPIOC
 #define USER_LED_RED_Pin GPIO_PIN_14
 #define USER_LED_RED_GPIO_Port GPIOB
+#define FLASH_CS_PIN_Pin GPIO_PIN_14
+#define FLASH_CS_PIN_GPIO_Port GPIOD
 #define USER_LED_YELLOW_Pin GPIO_PIN_1
 #define USER_LED_YELLOW_GPIO_Port GPIOE
 
