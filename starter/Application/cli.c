@@ -1,13 +1,22 @@
 #include "cli.h"
 
-#define LINE_SIZE	128
+#define LINE_SIZE	256
 #define KEY_BACKSPACE	'\177'
 
 int help_handler(const char *args) {
+	char *message = "~ Enter a command to execute various functionalities!~\r\n~Actions will be displayed on ssd136 and will be logged w/timestamp in the flash chip~\r\n";
+
+	HAL_UART_Transmit(&huart3, (const uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+
 	return 0;
 }
 
 int uuuu_handler(const char *args) {
+	char fw_version[32] = { "\0" };
+	snprintf(fw_version, sizeof(fw_version), "v_%d_%d_%d\r\n", VERSION_MAJOR, VERSION_MINOR, VERSION_REV);
+
+	HAL_UART_Transmit(&huart3, (const uint8_t *)fw_version, strlen(fw_version), HAL_MAX_DELAY);
+
 	return 0;
 }
 
@@ -31,10 +40,8 @@ char get_char(void) {
 }
 
 void execute_command(const char *line, int line_size) {
-	char *cmd = "";
-
 	for (int i = 0; i < COMMANDS_ARRAY_LENGTH; i++) {
-		if (strcmp(cmd, commands[i].command) == 0) {
+		if (strcmp(line, commands[i].command) == 0) {
 			commands[i].handler(line);
 		}
 	}

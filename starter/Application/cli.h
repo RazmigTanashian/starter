@@ -2,6 +2,9 @@
 #define CLI_H
 
 #include "application.h"
+#include "version.h"
+
+extern UART_HandleTypeDef huart3;
 
 extern QueueHandle_t xCharRecvQueue;
 
