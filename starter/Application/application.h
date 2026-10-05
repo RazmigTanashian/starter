@@ -8,6 +8,7 @@
 #include "cmsis_os2.h"
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "semphr.h"
 #include "string.h"
 #include "app_main.h"
 #include "cli.h"
