@@ -12,5 +12,6 @@
 #include "string.h"
 #include "app_main.h"
 #include "cli.h"
+#include "flash.h"
 
 #endif // APPLICATION_H
