@@ -22,6 +22,8 @@ static uint32_t flash_current_address = 0x000000;
 
 static SemaphoreHandle_t xSpiMutex;
 
+QueueHandle_t xFlashRecvQueue;
+
 // NOTE: USER OF THIS FUNCTION IS RESPONSIBLE FOR SEMAPHORE TAKE & GIVE
 static bool flash_is_busy(void) {
 	uint8_t cmd = CMD_READ_STATUS_REGISTER;
@@ -155,19 +157,20 @@ static void flash_reset(void) {
 	xSemaphoreGive(xSpiMutex);
 }
 
-int flash_init(void) {
+void flashTask(void *argument) {
 	xSpiMutex = xSemaphoreCreateMutex();
+	xFlashRecvQueue = xQueueCreate(5, sizeof(record_t));
+	if (xFlashRecvQueue == NULL)
+		// TODO: error handling
 
 	if (flash_read_jedec_id() == -1)
 		flash_reset();
 
 	flash_chip_erase();
 
-	// for (int i = 1; i < 5; i++) {
-	// 	uint8_t data = i;
-	// 	flash_write(&data, 1);
-
-	// 	flash_read();
-	// }
-	return 0;
+	record_t flash_record = { 0 };
+	for (;;) {
+		xQueueReceive(xFlashRecvQueue, &flash_record, portMAX_DELAY);
+		flash_write((uint8_t *)flash_record.content, flash_record.content_length);
+	}
 }

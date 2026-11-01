@@ -82,6 +82,13 @@ const osThreadAttr_t mainTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+
+osThreadId_t flashTaskHandle;
+const osThreadAttr_t flashTask_attributes = {
+  .name = "flashTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -181,6 +188,7 @@ int main(void)
   /* add threads, ... */
   mainTaskHandle = osThreadNew(mainTask, NULL, &mainTask_attributes);
   cliTaskHandle = osThreadNew(cliTask, NULL, &cliTask_attributes);
+  flashTaskHandle = osThreadNew(flashTask, NULL, &flashTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */

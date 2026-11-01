@@ -2,8 +2,6 @@
 
 void mainTask(void *argument)
 {
-	flash_init();
-
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
   for(;;)
