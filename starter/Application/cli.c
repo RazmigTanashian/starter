@@ -82,6 +82,10 @@ void cliTask(void *argument) {
 		get_line(line, LINE_SIZE);
 		execute_command(line, LINE_SIZE);
 
+		// Store incoming command as a record into flash
+
+		// TODO: mqtt publish the record
+
 		// Reset line_buf
 		memset(line, 0, LINE_SIZE);
 	}

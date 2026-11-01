@@ -22,6 +22,19 @@ static uint32_t flash_current_address = 0x000000;
 
 static SemaphoreHandle_t xSpiMutex;
 
+// NOTE: USER OF THIS FUNCTION IS RESPONSIBLE FOR SEMAPHORE TAKE & GIVE
+static bool flash_is_busy(void) {
+	uint8_t cmd = CMD_READ_STATUS_REGISTER;
+	uint8_t chip_status = 0;
+
+	FLASH_CS_LOW();
+	HAL_SPI_Transmit(&hspi1, &cmd, 1, HAL_MAX_DELAY);
+	HAL_SPI_Receive(&hspi1, &chip_status, 1, HAL_MAX_DELAY);
+	FLASH_CS_HIGH();
+
+	return (chip_status & 1) == 1 ? true : false;
+}
+
 static int flash_write_enable(void) {
 	uint8_t tdata = CMD_WRITE_ENABLE;
 
@@ -51,13 +64,7 @@ static int flash_chip_erase(void) {
 	HAL_SPI_Transmit(&hspi1, &tdata, 1, HAL_MAX_DELAY);
 	FLASH_CS_HIGH();
 
-	do {
-		FLASH_CS_LOW();
-		tdata = CMD_READ_STATUS_REGISTER;
-		HAL_SPI_Transmit(&hspi1, &tdata, 1, HAL_MAX_DELAY);
-		HAL_SPI_Receive(&hspi1, &chip_status, 1, HAL_MAX_DELAY);
-		FLASH_CS_HIGH();
-	} while ((chip_status & 1) == 1);
+	while (flash_is_busy()) {}
 
 	xSemaphoreGive(xSpiMutex);
 }
@@ -81,6 +88,8 @@ static int flash_write(uint8_t *data, int len) {
 	HAL_SPI_Transmit(&hspi1, data, len, HAL_MAX_DELAY);
 
 	FLASH_CS_HIGH();
+
+	while (flash_is_busy()) {}
 	xSemaphoreGive(xSpiMutex);
 
 	// Update flash address position
@@ -154,11 +163,11 @@ int flash_init(void) {
 
 	flash_chip_erase();
 
-	for (int i = 1; i < 5; i++) {
-		uint8_t data = i;
-		flash_write(&data, 1);
+	// for (int i = 1; i < 5; i++) {
+	// 	uint8_t data = i;
+	// 	flash_write(&data, 1);
 
-		flash_read();
-	}
+	// 	flash_read();
+	// }
 	return 0;
 }
