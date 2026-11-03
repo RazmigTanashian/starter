@@ -82,7 +82,7 @@ void cliTask(void *argument) {
 		get_line(line, LINE_SIZE);
 		execute_command(line, LINE_SIZE);
 
-		// Store incoming command as a record into flash
+//		xQueueSend(xFlashRecvQueue, (const void *)&r, portMAX_DELAY);
 
 		// TODO: mqtt publish the record
 

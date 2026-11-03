@@ -15,4 +15,6 @@
 #include "cli.h"
 #include "flash.h"
 
+#include "lwjson/lwjson.h"
+
 #endif // APPLICATION_H

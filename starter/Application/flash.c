@@ -159,7 +159,7 @@ static void flash_reset(void) {
 
 void flashTask(void *argument) {
 	xSpiMutex = xSemaphoreCreateMutex();
-	xFlashRecvQueue = xQueueCreate(5, sizeof(record_t));
+//	xFlashRecvQueue = xQueueCreate(5, sizeof(record_t));
 	if (xFlashRecvQueue == NULL)
 		// TODO: error handling
 
@@ -168,9 +168,9 @@ void flashTask(void *argument) {
 
 	flash_chip_erase();
 
-	record_t flash_record = { 0 };
+//	record_t flash_record = { 0 };
 	for (;;) {
-		xQueueReceive(xFlashRecvQueue, &flash_record, portMAX_DELAY);
-		flash_write((uint8_t *)flash_record.content, flash_record.content_length);
+//		xQueueReceive(xFlashRecvQueue, &flash_record, portMAX_DELAY);
+//		flash_write((uint8_t *)flash_record.content, flash_record.content_length);
 	}
 }
